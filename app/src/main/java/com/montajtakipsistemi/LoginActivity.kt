@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
@@ -28,46 +29,48 @@ class LoginActivity : AppCompatActivity() {
         cbBeniHatirla = findViewById(R.id.cbBeniHatirla)
         val btnGiris = findViewById<Button>(R.id.btnLogin)
 
-        // --- BENİ HATIRLA ---
+        // --- 👇 DÜZELTİLEN KISIM BURASI 👇 ---
+        // Senin XML dosyanı inceledim, ID'si: tvKayitOlLink
+        // Biz de burada aynısını kullanıyoruz:
+        val tvKayitOl = findViewById<TextView>(R.id.tvKayitOlLink)
+
+        tvKayitOl.setOnClickListener {
+            // Kayıt Ekranına Git
+            val intent = Intent(this, SignUpActivity::class.java)
+            startActivity(intent)
+        }
+        // -------------------------------------
+
+        // --- BENİ HATIRLA ve GİRİŞ İŞLEMLERİ (AYNI KALDI) ---
         val sharedPref = getSharedPreferences("GirisBilgileri", Context.MODE_PRIVATE)
-        val kayitliVeri = sharedPref.getString("mail", null) // Artık buraya "admin 1" gelecek
+        val kayitliVeri = sharedPref.getString("mail", null)
         val kayitliSifre = sharedPref.getString("sifre", null)
         val hatirla = sharedPref.getBoolean("hatirla", false)
 
         if (hatirla && kayitliVeri != null) {
-            etEmail.setText(kayitliVeri) // Kutucuğa kısa ismi yaz
+            etEmail.setText(kayitliVeri)
             etSifre.setText(kayitliSifre)
             cbBeniHatirla.isChecked = true
         }
 
-        // Eğer kullanıcı zaten oturum açmışsa, tekrar giriş yapmasın
         if (auth.currentUser != null) {
             val email = auth.currentUser!!.email.toString()
             yonlendir(email)
         }
 
         btnGiris.setOnClickListener {
-            // 1. Senin yazdığın orjinal veriyi al (Örn: "admin 1")
             val hamVeri = etEmail.text.toString().trim()
             val sifre = etSifre.text.toString()
-
-            // 2. İşlem yapacağımız geçici değişkeni oluştur
             var islenecekMail = hamVeri
 
             if (hamVeri.isNotEmpty() && sifre.isNotEmpty()) {
-
-                // Eğer @ yoksa, mail formatına çevir
                 if (!islenecekMail.contains("@")) {
                     islenecekMail = islenecekMail.replace(" ", ".") + "@montajtakip.com"
                 }
 
-                // Giriş işlemini ÇEVRİLMİŞ mail ile yap (Firebase bunu ister)
                 auth.signInWithEmailAndPassword(islenecekMail, sifre).addOnSuccessListener {
-
                     val editor = sharedPref.edit()
                     if (cbBeniHatirla.isChecked) {
-                        // DİKKAT: Hafızaya ÇEVRİLMİŞ olani değil, HAM veriyi kaydet!
-                        // Böylece bir dahaki sefere "admin 1" olarak hatırlanır.
                         editor.putString("mail", hamVeri)
                         editor.putString("sifre", sifre)
                         editor.putBoolean("hatirla", true)
@@ -75,9 +78,7 @@ class LoginActivity : AppCompatActivity() {
                         editor.clear()
                     }
                     editor.apply()
-
                     yonlendir(islenecekMail)
-
                 }.addOnFailureListener {
                     Toast.makeText(this, "Hata: ${it.localizedMessage}", Toast.LENGTH_LONG).show()
                 }

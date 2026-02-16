@@ -92,7 +92,7 @@
             android:id="@+id/tvGirisDon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="GİRİŞ YAP"
+            android:text="Giriş Yap"
             android:textColor="@color/bordo_ana"
             android:textSize="16sp"
             android:textStyle="bold"
