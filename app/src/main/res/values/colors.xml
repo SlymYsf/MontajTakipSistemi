@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bordo_ana">#C62828</color>    <color name="bordo_koyu">#8E0000</color>   <color name="siyah_metal">#212121</color>
+    <color name="gri_zemin">#EEEEEE</color>
+    <color name="beyaz">#FFFFFF</color>
+    <color name="gri_yazi">#616161</color>
+</resources>

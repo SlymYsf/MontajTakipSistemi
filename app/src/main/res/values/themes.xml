@@ -1,0 +1,8 @@
+<resources>
+    <style name="Base.Theme.MontajTakip" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/bordo_ana</item>
+        <item name="colorPrimaryVariant">@color/bordo_koyu</item>
+        <item name="android:statusBarColor">@color/bordo_koyu</item>
+    </style>
+    <style name="Theme.MontajTakip" parent="Base.Theme.MontajTakip" />
+</resources>

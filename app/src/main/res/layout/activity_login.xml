@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="30dp"
+    android:background="@color/gri_zemin">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MONTAJ TAKİP"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="@color/bordo_ana"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PERSONEL GİRİŞ PANELİ"
+        android:textSize="16sp"
+        android:textColor="@color/siyah_metal"
+        android:layout_marginBottom="40dp"/>
+
+    <EditText
+        android:id="@+id/etKullaniciAdi"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:hint="Adınız Soyadınız"
+        android:inputType="textPersonName"
+        android:background="@android:color/white"
+        android:paddingStart="20dp"
+        android:textColor="@color/siyah_metal"
+        android:elevation="4dp"
+        android:layout_marginBottom="15dp"/>
+
+    <EditText
+        android:id="@+id/etPassword"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:hint="Giriş Şifresi"
+        android:inputType="numberPassword"
+        android:background="@android:color/white"
+        android:paddingStart="20dp"
+        android:textColor="@color/siyah_metal"
+        android:elevation="4dp"
+        android:layout_marginBottom="25dp"/>
+
+    <CheckBox
+        android:id="@+id/cbBeniHatirla"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Beni Hatırla"
+        android:layout_gravity="start"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnLogin"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:text="GİRİŞ YAP"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/beyaz"
+        android:backgroundTint="@color/bordo_ana"
+
+        android:gravity="center" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center"
+        android:layout_marginTop="25dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hesabınız yok mu? "
+            android:textColor="@color/gri_yazi"
+            android:textSize="15sp"/>
+
+        <TextView
+            android:id="@+id/tvKayitOlLink"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kaydolun"
+            android:textColor="@color/bordo_ana"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:padding="5dp"/>
+    </LinearLayout>
+
+</LinearLayout>
