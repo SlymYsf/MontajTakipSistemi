@@ -8,7 +8,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Bundle
-import android.widget.ImageButton // ImageButton eklendi
+import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -21,6 +21,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import kotlin.math.abs
 
 class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -30,27 +31,27 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_map)
 
+        // Harita Fragmentini Bağla
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        // --- DÜZELTME BURADA YAPILDI ---
-        // Eski "btnPersonelListesi" yerine yeni "btnHome" butonunu tanımladık.
-        // Türünü de "ImageButton" olarak belirttik.
+        // Geri Dön (Home) Butonu
         findViewById<ImageButton>(R.id.btnHome).setOnClickListener {
             startActivity(Intent(this, AdminDashboardActivity::class.java))
-            finish() // Harita sayfasını kapat
+            finish()
         }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
-        // 1. KAMERA AYARI (Fabrikaya odaklansın)
+        // --- 1. KAMERA AYARI (Daha Yakın Başlasın) ---
+        // 10f çok uzaktı, 15f yaptık (Mahalle görünümü)
         val fabrikaKonum = LatLng(37.8279885, 29.3325512)
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(fabrikaKonum, 10f))
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(fabrikaKonum, 15f))
 
-        // 2. PERSONELLERİ GETİR
+        // Personelleri Getir ve Çiz
         personelleriHaritayaEkle()
     }
 
@@ -60,25 +61,32 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         dbRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                mMap.clear() // Haritayı temizle
+                mMap.clear() // Haritayı temizle (Yeni veri gelince eskileri sil)
 
                 for (data in snapshot.children) {
+                    val uid = data.key ?: continue // Kullanıcı ID'si (Ayrıştırma için lazım)
+
                     val isim = data.child("isim").value.toString()
                     val lat = data.child("latitude").value.toString().toDoubleOrNull() ?: 0.0
                     val lng = data.child("longitude").value.toString().toDoubleOrNull() ?: 0.0
                     val durum = data.child("durum").value.toString()
 
                     if (lat != 0.0 && lng != 0.0) {
-                        val konum = LatLng(lat, lng)
 
-                        // İSMİN BAŞ HARFLERİNİ AL (Örn: Ahmet Yılmaz -> AY)
+                        // --- KRİTİK NOKTA: ÇAKIŞMAYI ÖNLEME ---
+                        // İşçinin gerçek konumunu alıp, ekranda göstermek için
+                        // hafifçe sağa sola kaydırıyoruz.
+                        val guncelKonum = cakismayiOnle(uid, lat, lng)
+
+                        // İsmin Baş Harflerini Al (Ahmet Yılmaz -> AY)
                         val basHarfler = isimdenBasHarfAl(isim)
 
-                        // SABİT BOYUTLU MARKER OLUŞTUR
+                        // Turuncu Yuvarlak İkonu Oluştur
                         val ozelIcon = createFixedSizeMarker(this@MapActivity, basHarfler)
 
+                        // Haritaya Ekle
                         mMap.addMarker(MarkerOptions()
-                            .position(konum)
+                            .position(guncelKonum) // <-- Dikkat: Kaydırılmış konumu kullanıyoruz
                             .title("$isim ($durum)")
                             .icon(BitmapDescriptorFactory.fromBitmap(ozelIcon)))
                     }
@@ -89,7 +97,33 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         })
     }
 
-    // --- SABİT BOYUTLU MARKER (AYNI KALDI) ---
+    /**
+     * --- ÇAKIŞMAYI ÖNLEME SİHİRBAZI ---
+     * İki işçi aynı GPS noktasındaysa (aynı oda, aynı masa vb.)
+     * onları haritada üst üste bindirmemek için ID'lerine göre
+     * matematiksel olarak birbirinden uzaklaştırır.
+     */
+    private fun cakismayiOnle(uid: String, lat: Double, lng: Double): LatLng {
+        // ID'den benzersiz bir sayı üret
+        val hash = uid.hashCode()
+
+        // --- AYAR: NE KADAR UZAĞA GİTSİN? ---
+        // 0.0005 = Yaklaşık 50-60 metre (Haritada net ayrılır)
+        val sapmaMiktari = 0.0005
+
+        // -1 ile +1 arasında sabit bir yön belirle
+        // (Math.sin ve cos kullanarak dairesel dağıtırız)
+        val latYon = Math.sin(hash.toDouble())
+        val lngYon = Math.cos(hash.toDouble())
+
+        // Orijinal konuma bu sapmayı ekle
+        val yeniLat = lat + (latYon * sapmaMiktari)
+        val yeniLng = lng + (lngYon * sapmaMiktari)
+
+        return LatLng(yeniLat, yeniLng)
+    }
+
+    // --- ÖZEL MARKER TASARIMI (TURUNCU YUVARLAK) ---
     private fun createFixedSizeMarker(context: Context, text: String): Bitmap {
         val resources = context.resources
         val scale = resources.displayMetrics.density
@@ -102,7 +136,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         val canvas = Canvas(bitmap)
 
         val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#FF5722") // Turuncu
+            color = Color.parseColor("#FF5722") // Turuncu Renk
             style = Paint.Style.FILL
         }
         canvas.drawCircle(radius, radius, radius, circlePaint)
@@ -120,14 +154,17 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         return bitmap
     }
 
+    // --- İSİMDEN BAŞ HARF ALMA ---
     private fun isimdenBasHarfAl(isim: String): String {
         if (isim.isEmpty()) return "?"
         val kelimeler = isim.trim().split("\\s+".toRegex())
         var sonuc = ""
 
         if (kelimeler.isNotEmpty()) {
-            sonuc += kelimeler[0][0].uppercase()
-            if (kelimeler.size > 1) {
+            if (kelimeler[0].isNotEmpty()) {
+                sonuc += kelimeler[0][0].uppercase()
+            }
+            if (kelimeler.size > 1 && kelimeler.last().isNotEmpty()) {
                 sonuc += kelimeler.last()[0].uppercase()
             }
         }
