@@ -93,7 +93,20 @@ class LoginActivity : AppCompatActivity() {
             Intent(this, AdminDashboardActivity::class.java)
         } else {
             Intent(this, WorkerActivity::class.java).apply {
-                putExtra("ISCI_ISMI", email.substringBefore("@"))
+
+                // --- DÜZELTİLEN KISIM BURASI ---
+                // 1. @ işaretinden önceki kısmı al (kymet.medet)
+                // 2. Noktadan (.) kelimeleri böl
+                // 3. Her kelimenin ilk harfini büyüt ve aralarına boşluk koyarak birleştir
+                val duzenliIsim = email.substringBefore("@")
+                    .split(".")
+                    .joinToString(" ") { kelime ->
+                        kelime.replaceFirstChar { it.uppercase() }
+                    }
+
+                putExtra("ISCI_ISMI", duzenliIsim)
+                // -------------------------------
+
             }
         }
         startActivity(intent)
