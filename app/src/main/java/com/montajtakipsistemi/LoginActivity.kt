@@ -1,3 +1,4 @@
+// LoginActivity.kt
 package com.montajtakipsistemi
 
 import android.content.Context
@@ -10,6 +11,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import java.util.Locale
 
 class LoginActivity : AppCompatActivity() {
 
@@ -28,20 +34,12 @@ class LoginActivity : AppCompatActivity() {
         etSifre = findViewById(R.id.etPassword)
         cbBeniHatirla = findViewById(R.id.cbBeniHatirla)
         val btnGiris = findViewById<Button>(R.id.btnLogin)
-
-        // --- 👇 DÜZELTİLEN KISIM BURASI 👇 ---
-        // Senin XML dosyanı inceledim, ID'si: tvKayitOlLink
-        // Biz de burada aynısını kullanıyoruz:
         val tvKayitOl = findViewById<TextView>(R.id.tvKayitOlLink)
 
         tvKayitOl.setOnClickListener {
-            // Kayıt Ekranına Git
-            val intent = Intent(this, SignUpActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, SignUpActivity::class.java))
         }
-        // -------------------------------------
 
-        // --- BENİ HATIRLA ve GİRİŞ İŞLEMLERİ (AYNI KALDI) ---
         val sharedPref = getSharedPreferences("GirisBilgileri", Context.MODE_PRIVATE)
         val kayitliVeri = sharedPref.getString("mail", null)
         val kayitliSifre = sharedPref.getString("sifre", null)
@@ -53,9 +51,11 @@ class LoginActivity : AppCompatActivity() {
             cbBeniHatirla.isChecked = true
         }
 
+        // --- GİRİŞ YAPMIŞ KULLANICIYI KONTROL ET ---
         if (auth.currentUser != null) {
             val email = auth.currentUser!!.email.toString()
-            yonlendir(email)
+            val uid = auth.currentUser!!.uid
+            yonlendir(uid, email)
         }
 
         btnGiris.setOnClickListener {
@@ -65,7 +65,8 @@ class LoginActivity : AppCompatActivity() {
 
             if (hamVeri.isNotEmpty() && sifre.isNotEmpty()) {
                 if (!islenecekMail.contains("@")) {
-                    islenecekMail = islenecekMail.replace(" ", ".") + "@montajtakip.com"
+                    val temizMail = mailIcinTemizle(hamVeri)
+                    islenecekMail = temizMail.replace(" ", ".") + "@montajtakip.com"
                 }
 
                 auth.signInWithEmailAndPassword(islenecekMail, sifre).addOnSuccessListener {
@@ -78,7 +79,10 @@ class LoginActivity : AppCompatActivity() {
                         editor.clear()
                     }
                     editor.apply()
-                    yonlendir(islenecekMail)
+
+                    val uid = auth.currentUser!!.uid
+                    yonlendir(uid, islenecekMail)
+
                 }.addOnFailureListener {
                     Toast.makeText(this, "Hata: ${it.localizedMessage}", Toast.LENGTH_LONG).show()
                 }
@@ -88,28 +92,46 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun yonlendir(email: String) {
-        val intent = if (email.contains("admin")) {
-            Intent(this, AdminDashboardActivity::class.java)
-        } else {
-            Intent(this, WorkerActivity::class.java).apply {
+    // --- YENİ YÖNLENDİRME FONKSİYONU (VERİTABANINA BAKAR) ---
+    private fun yonlendir(uid: String, email: String) {
+        val dbRef = FirebaseDatabase.getInstance("https://montajtakip-ebf80-default-rtdb.europe-west1.firebasedatabase.app")
+            .getReference("Users").child(uid)
 
-                // --- DÜZELTİLEN KISIM BURASI ---
-                // 1. @ işaretinden önceki kısmı al (kymet.medet)
-                // 2. Noktadan (.) kelimeleri böl
-                // 3. Her kelimenin ilk harfini büyüt ve aralarına boşluk koyarak birleştir
-                val duzenliIsim = email.substringBefore("@")
-                    .split(".")
-                    .joinToString(" ") { kelime ->
-                        kelime.replaceFirstChar { it.uppercase() }
+        dbRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Veritabanından rolü çek, bulamazsa varsayılan olarak "personel" yap
+                val rol = snapshot.child("role").value?.toString() ?: "personel"
+
+                val intent = if (rol == "admin" || email.contains("admin")) {
+                    Intent(this@LoginActivity, AdminDashboardActivity::class.java)
+                } else {
+                    Intent(this@LoginActivity, WorkerActivity::class.java).apply {
+                        val duzenliIsim = email.substringBefore("@")
+                            .split(".")
+                            .joinToString(" ") { kelime ->
+                                kelime.replaceFirstChar { it.uppercase() }
+                            }
+                        putExtra("ISCI_ISMI", duzenliIsim)
                     }
-
-                putExtra("ISCI_ISMI", duzenliIsim)
-                // -------------------------------
-
+                }
+                startActivity(intent)
+                finish()
             }
-        }
-        startActivity(intent)
-        finish()
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@LoginActivity, "Rol okunamadı, personel girişi yapılıyor.", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun mailIcinTemizle(metin: String): String {
+        var yeniMetin = metin.lowercase(Locale.ENGLISH)
+        yeniMetin = yeniMetin.replace("ç", "c")
+            .replace("ğ", "g")
+            .replace("ı", "i")
+            .replace("ö", "o")
+            .replace("ş", "s")
+            .replace("ü", "u")
+        return yeniMetin
     }
 }

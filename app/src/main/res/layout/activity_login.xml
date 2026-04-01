@@ -19,7 +19,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="PERSONEL GİRİŞ PANELİ"
+        android:text="ÇALIŞAN GİRİŞ PANELİ"
         android:textSize="16sp"
         android:textColor="@color/siyah_metal"
         android:layout_marginBottom="40dp"/>
